@@ -9,8 +9,8 @@ namespace GlobalOPT_FW_Application
     internal class Program
     {
         static string strCmdText;
-        static string tag = "v0";
-        static string name = "02";
+        static string tag = "fw";
+        static string name = "opt";
         static string gitRepoURL = "https://github.com/mraposka/DockerOPT";
         static string gitRepoName = gitRepoURL.Split('/').Last();
         static string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
