@@ -22,8 +22,7 @@ namespace GlobalOPT_FW_Application
             //---To-do list---
             // 
             //docker and git install with winget or selse function 
-            //succesful check
-            //version control for clearing
+            //succesful check 
             //  
             //---To-do list---
             //</summary>
