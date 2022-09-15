@@ -28,8 +28,8 @@ namespace GlobalOPT_FW_Application
             //---To-do list---
             //</summary>
 
-            Clear();
-            GitClone();
+            ClearAndUpdate();
+            if (!Directory.Exists(desktopPath + "\\GlobalOPTFW\\" + gitRepoName)) GitClone();//if repo does not exists clone it
             CreateDockerImage();
             RunDockerBuild();
             Console.ReadKey();
@@ -39,16 +39,15 @@ namespace GlobalOPT_FW_Application
             //Runs created docker build
             Echo("Executing...");
             Thread.Sleep(100);
-            strCmdText = "/C cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker run " + tag + ":" + name;
-            string output = RunCommand();
-            Console.WriteLine(output); 
+            strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker run " + tag + ":" + name;
+            string output=RunCommand(); 
             Echo("Execution completed!");
             //Runs created docker build
             //Saving results in result.txt file 
             Echo("Saving results...");
             string buildOutput = "------Build Time:" + DateTime.Now + "------\n" + output + "------Build Finished------\n";
             if (!File.Exists(textFilePath))
-            {  FileStream fs = File.Create(textFilePath);  fs.Close(); }//Create result.txt file if does not exist
+            { FileStream fs = File.Create(textFilePath); fs.Close(); }//Create result.txt file if does not exist
             File.AppendAllText(textFilePath, buildOutput);
             Echo("Result file succesfully written on result file on Desktop\n\nPress any key to exit");
             //Saving results in result.txt file
@@ -57,9 +56,8 @@ namespace GlobalOPT_FW_Application
         {
             //Building docker image 
             Echo("Building Docker Image...");
-            strCmdText = "/C cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker build . -t " + tag + ":" + name;
-            string output = RunCommand();
-            Console.WriteLine(output);
+            strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker build . -t " + tag + ":" + name;
+            RunCommand(); 
             Echo("Docker Image Built Succesfully!");
             //Building docker image 
         }
@@ -67,22 +65,29 @@ namespace GlobalOPT_FW_Application
         {
             //Cloning git repo on Desktop 
             Echo("Cloning Git Repository...");
-            strCmdText = "/C cd " + desktopPath + " & mkdir GlobalOPTFW & cd GlobalOPTFW & git clone " + gitRepoURL;
+            strCmdText = "/C @echo off &  cd " + desktopPath + " & mkdir GlobalOPTFW & cd GlobalOPTFW & git clone " + gitRepoURL;
             string output = RunCommand();
             Echo(output + "Git Repo Cloned!");
             //Cloning git repo on Desktop
         }
 
-        static void Clear()
+        static void ClearAndUpdate()
         {
-            //Clearing old repo clone
-            Echo("Clearing old builds and repository...");
-            strCmdText = "/C rmdir /s /q " + desktopPath + "\\GlobalOPTFW";
-            if (Directory.Exists(desktopPath + "\\GlobalOPTFW")) RunCommand();
-            Echo("Git Repo Clone Cleared!");
-            //Clearing old repo clone 
+            //Updating repo
+            Echo("Clearing old builds and updating repository...");
+            if (Directory.Exists(desktopPath + "\\GlobalOPTFW\\" + gitRepoName))//if repo exists update repo
+            {
+                strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & git pull";
+                RunCommand();
+                Echo("Git Repo Updated To Latest Version!");
+            }
+            else
+            {
+                Error("Git Repo Not Found!");
+            }
+            //Updating repo 
             //Clearing all docker images
-            strCmdText = "/C for /F %i in ('docker images -a -q') do docker rmi -f %i";
+            strCmdText = "/C @echo off &  for /F %i in ('docker images -a -q') do docker rmi -f %i";
             RunCommand();
             Echo("All Docker Image Cleared!");
             //Clearing all docker images
@@ -101,13 +106,21 @@ namespace GlobalOPT_FW_Application
             process.StartInfo = startInfo;
             process.Start();
             string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            process.WaitForExit(); 
+            Console.WriteLine(output);
             Thread.Sleep(100);
             return output;
         }
         static void Echo(string text)//function that logs on terminal 
         {
             Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(text + "\n");
+            Thread.Sleep(100);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+        static void Error(string text)//function that logs on terminal 
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(text + "\n");
             Thread.Sleep(100);
             Console.ForegroundColor = ConsoleColor.White;
