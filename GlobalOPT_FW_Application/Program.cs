@@ -14,21 +14,46 @@ namespace GlobalOPT_FW_Application
         static string gitRepoURL = "https://github.com/mraposka/DockerOPT";
         static string gitRepoName = gitRepoURL.Split('/').Last();
         static string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        static string gitRepoClonePath = desktopPath + "\\GlobalOPTFW\\" + gitRepoName + "\\globalopt";
         static string textFilePath = desktopPath + "\\result.txt";
-
+        static string algorithm = "", iteration = "", threshold = "", depth = "", num_matrices = "", bfi = "";
         static void Main(string[] args)
         {
             //<summary>
             //---To-do list---
             // 
-            //docker and git install with winget or selse function 
+            //docker and git install with winget or selse function (shell completed need implementing)
             //succesful check 
+            //docker run engine
             //  
             //---To-do list---
-            //</summary>
-
+            //</summary> 
+            Echo("Welcome to the GlobalOPT");
+            Echo("Insert Parameters");
+            Console.WriteLine("Enter 0 For Skip All Parameters");
+            Console.WriteLine("Leave Empty For Skip Parameter");
+            Console.Write("Select an Algorithm: ");
+            algorithm = Console.ReadLine();
+            if (algorithm != "0")
+            {
+                Console.Write("Number of Iteration: ");
+                iteration = Console.ReadLine();
+                Console.Write("Threshold Value: ");
+                threshold = Console.ReadLine();
+                Console.Write("Depth Value: ");
+                depth = Console.ReadLine();
+                Console.Write("Number of Matrices: ");
+                num_matrices = Console.ReadLine();
+                Console.Write("BFI Value: ");
+                bfi = Console.ReadLine();
+                Echo("Parameters saved");
+            }
+            else
+            {
+                Echo("Last parameters will be used");
+            }
             ClearAndUpdate();
-            if (!Directory.Exists(desktopPath + "\\GlobalOPTFW\\" + gitRepoName)) GitClone();//if repo does not exists clone it
+            if (!Directory.Exists(gitRepoClonePath)) GitClone();//if repo does not exists clone it
             CreateDockerImage();
             RunDockerBuild();
             Console.ReadKey();
@@ -38,25 +63,41 @@ namespace GlobalOPT_FW_Application
             //Runs created docker build
             Echo("Executing...");
             Thread.Sleep(100);
-            strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker run " + tag + ":" + name;
-            string output=RunCommand(); 
+            strCmdText = "/C @echo off &  cd " + gitRepoClonePath + " & docker run " + tag + ":" + name;
+            string output = RunCommand();
             Echo("Execution completed!");
             //Runs created docker build
             //Saving results in result.txt file 
             Echo("Saving results...");
             string buildOutput = "------Build Time:" + DateTime.Now + "------\n" + output + "------Build Finished------\n";
             if (!File.Exists(textFilePath))
-            { FileStream fs = File.Create(textFilePath); fs.Close(); }//Create result.txt file if does not exist
+                File.Create(textFilePath).Close();//Create result.txt file if does not exist
             File.AppendAllText(textFilePath, buildOutput);
             Echo("Result file succesfully written on result file on Desktop\n\nPress any key to exit");
             //Saving results in result.txt file
         }
         static void CreateDockerImage()
-        {
-            //Building docker image 
+        { 
+            //Building docker image
+            Echo("Getting parameters...");
+            string oldParameters = File.ReadAllText(gitRepoClonePath + "\\parameter.txt");
+            string[] lines = oldParameters.Split(new string[] { Environment.NewLine }, StringSplitOptions.None); 
+            if (algorithm != "0")//Implementing parameters if added
+            {
+                Echo("Implementing parameters...");
+                algorithm = algorithm != "0" ? algorithm : lines[0].Split('=')[1];
+                iteration = iteration != string.Empty ? iteration : lines[2].Split('=')[1];
+                threshold = threshold != string.Empty ? threshold : lines[3].Split('=')[1];
+                depth = depth != string.Empty ? depth : lines[4].Split('=')[1];
+                num_matrices = num_matrices != string.Empty ? num_matrices : lines[5].Split('=')[1];
+                bfi = bfi != string.Empty ? bfi : lines[6].Split('=')[1];
+                ChangeParameters();
+                Echo("Implementing completed");
+            }
+            Thread.Sleep(100);
             Echo("Building Docker Image...");
-            strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & docker build . -t " + tag + ":" + name;
-            RunCommand(); 
+            strCmdText = "/C @echo off &  cd " + gitRepoClonePath + " & docker build . -t " + tag + ":" + name;
+            RunCommand();
             Echo("Docker Image Built Succesfully!");
             //Building docker image 
         }
@@ -74,15 +115,15 @@ namespace GlobalOPT_FW_Application
         {
             //Updating repo
             Echo("Clearing old builds and updating repository...");
-            if (Directory.Exists(desktopPath + "\\GlobalOPTFW\\" + gitRepoName))//if repo exists update repo
+            if (Directory.Exists(gitRepoClonePath))//if repo exists update repo
             {
-                strCmdText = "/C @echo off &  cd " + desktopPath + "\\GlobalOPTFW\\" + gitRepoName + " & git pull";
+                strCmdText = "/C @echo off &  cd " + gitRepoClonePath + " & git pull";
                 RunCommand();
                 Echo("Git Repo Updated To Latest Version!");
             }
             else
             {
-                Error("Git Repo Not Found!");
+                Echo("Git Repo Not Found!", ConsoleColor.Red);
             }
             //Updating repo 
             //Clearing all docker images
@@ -91,6 +132,14 @@ namespace GlobalOPT_FW_Application
             Echo("All Docker Image Cleared!");
             //Clearing all docker images
             Echo("All Cleared");
+        }
+
+        static void ChangeParameters()
+        {
+            //Changing the parameter.txt
+            string parameter = "ALGORITHM=" + algorithm + "\r\nMATRIX_PATH=matrix.txt\r\nITERATION=" + iteration + "\r\nTHRESHOLD=" + threshold + "\r\nDEPTH=" + depth + "\r\nNUM_MATRICES=" + num_matrices + "\r\nBFI=" + bfi + "";
+            File.WriteAllText(gitRepoClonePath + "\\parameter.txt", parameter);
+            //Changing the parameter.txt
         }
 
         static string RunCommand()//Function that run commands on cmd.exe
@@ -105,24 +154,19 @@ namespace GlobalOPT_FW_Application
             process.StartInfo = startInfo;
             process.Start();
             string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(); 
+            process.WaitForExit();
             Console.WriteLine(output);
             Thread.Sleep(100);
             return output;
         }
-        static void Echo(string text)//function that logs on terminal 
+
+        static void Echo(string text, ConsoleColor color = ConsoleColor.Green)//function that logs on terminal 
         {
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = color;
             Console.WriteLine(text + "\n");
             Thread.Sleep(100);
             Console.ForegroundColor = ConsoleColor.White;
         }
-        static void Error(string text)//function that logs on terminal 
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(text + "\n");
-            Thread.Sleep(100);
-            Console.ForegroundColor = ConsoleColor.White;
-        }
+
     }
 }
