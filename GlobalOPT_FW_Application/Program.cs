@@ -8,6 +8,7 @@ namespace GlobalOPT_FW_Application
 {
     internal class Program
     {
+        static bool softwareInstallation = false;
         static string strCmdText;
         static string tag = "fw";
         static string name = "opt";
@@ -22,13 +23,20 @@ namespace GlobalOPT_FW_Application
             //<summary>
             //---To-do list---
             // 
-            //docker and git install with winget or selse function (shell completed need implementing)
             //succesful check 
             //docker run engine
             //  
             //---To-do list---
             //</summary> 
             Echo("Welcome to the GlobalOPT");
+            Echo("Checking required softwares...");
+            InstallRequiredSoftwares();
+            File.Delete("gitinstaller.ps1");//Delete Git Installer shell script
+            File.Delete("dockerinstaller.ps1");//Delete Docker Installer shell script
+            if (softwareInstallation)
+                Echo("Checking completed. System now has all required softwares");
+            else
+                Echo("Checking completed. System has all required softwares");
             Echo("Insert Parameters");
             Console.WriteLine("Enter 0 For Skip All Parameters");
             Console.WriteLine("Leave Empty For Skip Parameter");
@@ -76,12 +84,83 @@ namespace GlobalOPT_FW_Application
             Echo("Result file succesfully written on result file on Desktop\n\nPress any key to exit");
             //Saving results in result.txt file
         }
+        static void InstallRequiredSoftwares()
+        {
+            GitInstall();
+            DockerInstall();
+        }
+        static void GitInstall()
+        {
+            Echo("Checking Git...");
+            strCmdText = "/C git -v";
+            string output = RunCommand();//If git is installed output will be version of git. So it cant be null
+            if (string.IsNullOrEmpty(output))
+            {
+                //Installing Git
+                Echo("Git not found. Installing Git...");
+                string installCommand = "$git_url = \"https://api.github.com/repos/git-for-windows/git/releases/latest\"\r\n$asset = Invoke-RestMethod -Method Get -Uri $git_url | % assets | where name -like \"*64-bit.exe\"\r\n# download installer\r\n$installer = \"$env:temp\\$($asset.name)\"\r\nInvoke-WebRequest -Uri $asset.browser_download_url -OutFile $installer\r\n# run installer\r\n$git_install_inf = \"<install inf file>\"\r\n$install_args = \"/SP- /VERYSILENT /SUPPRESSMSGBOXES /NOCANCEL /NORESTART /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /LOADINF=\"\"$git_install_inf\"\"\"\r\nStart-Process -FilePath $installer -ArgumentList $install_args -Wait";
+                File.Create("gitinstaller.txt").Close();
+                File.WriteAllText("gitinstaller.txt", installCommand);
+                File.Move("gitinstaller.txt", Path.ChangeExtension("gitinstaller.txt", ".ps1"));
+                var startInfo = new ProcessStartInfo()
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -ExecutionPolicy ByPass -File \"gitinstaller.ps1\"",
+                    Verb = "runas",
+                    UseShellExecute = false
+                };
+                Process process = new Process();
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+                Echo("Git installed");
+                softwareInstallation = true;//is any software installed
+                //Installing Git 
+            }
+            else 
+                Echo("Git found.");  
+        }
+        static void DockerInstall()
+        {
+            Echo("Checking Docker...");
+            strCmdText = "/C docker -v";
+            string output = RunCommand();//If docker is installed output will be version of git. So it cant be null
+            if (string.IsNullOrEmpty(output))
+            {
+                //Installing Choco And Docker
+                Echo("Docker not found. Installing Docker...");
+                //choco uninstalling (for reinstall *temporary solution*) 
+                try { Directory.Delete(System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData) + "\\chocolatey"); } catch { }
+
+                //choco uninstalling (for reinstall *temporary solution*)
+                string installCommand = "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString(\"https://chocolatey.org/install.ps1\"))\r\nchoco install docker-desktop -y";
+                File.Create("dockerinstaller.txt").Close();
+                File.WriteAllText("dockerinstaller.txt", installCommand);
+                File.Move("dockerinstaller.txt", Path.ChangeExtension("dockerinstaller.txt", ".ps1"));
+                var startInfo = new ProcessStartInfo()
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -ExecutionPolicy ByPass -File \"dockerinstaller.ps1\"",
+                    Verb = "runas",
+                    UseShellExecute = false
+                };
+                Process process = new Process();
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+                Echo("Docker installed");
+                softwareInstallation = true;//is any software installed
+                //Installing Choco And Docker 
+            }
+            else 
+                Echo("Docker found."); 
+        }
         static void CreateDockerImage()
-        { 
+        {
             //Building docker image
             Echo("Getting parameters...");
             string oldParameters = File.ReadAllText(gitRepoClonePath + "\\parameter.txt");
-            string[] lines = oldParameters.Split(new string[] { Environment.NewLine }, StringSplitOptions.None); 
+            string[] lines = oldParameters.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             if (algorithm != "0")//Implementing parameters if added
             {
                 Echo("Implementing parameters...");
@@ -154,7 +233,7 @@ namespace GlobalOPT_FW_Application
             process.StartInfo = startInfo;
             process.Start();
             string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            process.WaitForExit(); 
             Console.WriteLine(output);
             Thread.Sleep(100);
             return output;
