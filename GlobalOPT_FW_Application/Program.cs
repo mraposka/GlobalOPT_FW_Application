@@ -2,7 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace GlobalOPT_FW_Application
 {
@@ -24,8 +26,7 @@ namespace GlobalOPT_FW_Application
             //---To-do list---
             // 
             //command succesful check
-            //docker run engine
-            //if git is not installed restart program when installation done
+            //docker run engine 
             //  
             //---To-do list---
             //</summary> 
@@ -117,10 +118,16 @@ namespace GlobalOPT_FW_Application
                 process.WaitForExit();
                 Echo("Git installed");
                 softwareInstallation = true;//is any software installed
+                Restart();//Restarting program for git commands
                 //Installing Git 
             }
             else 
                 Echo("Git found.");  
+        }
+        static void Restart()
+        {
+            System.Diagnostics.Process.Start(Assembly.GetExecutingAssembly().Location); 
+            Environment.Exit(0);
         }
         static void DockerInstall()
         {
