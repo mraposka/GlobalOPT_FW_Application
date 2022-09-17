@@ -23,11 +23,13 @@ namespace GlobalOPT_FW_Application
             //<summary>
             //---To-do list---
             // 
-            //succesful check 
+            //command succesful check
             //docker run engine
+            //if git is not installed restart program when installation done
             //  
             //---To-do list---
             //</summary> 
+
             Echo("Welcome to the GlobalOPT");
             Echo("Checking required softwares...");
             InstallRequiredSoftwares();
