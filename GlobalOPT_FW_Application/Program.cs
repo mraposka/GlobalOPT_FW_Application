@@ -22,6 +22,7 @@ namespace GlobalOPT_FW_Application
         static string gitRepoURL = "https://github.com/mraposka/DockerOPT";
         static string gitRepoName = gitRepoURL.Split('/').Last();
         static string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        static string winDir = Path.GetPathRoot(System.Environment.GetEnvironmentVariable("WINDIR"));
         static string gitRepoClonePath = desktopPath + "\\GlobalOPTFW\\" + gitRepoName + "\\globalopt";
         static string dockerFilePath = desktopPath + "\\GlobalOPTFW\\" + gitRepoName;
         static string textFilePath = desktopPath + "\\result.txt";
@@ -31,7 +32,8 @@ namespace GlobalOPT_FW_Application
             //<summary>
             //---To-do list---
             // 
-            //command succesful check 
+            //command succesful check  
+            //parametreler algoritmaya göre istenecek
             //  
             //---To-do list---
             //</summary> 
@@ -39,7 +41,8 @@ namespace GlobalOPT_FW_Application
             Echo("Welcome to the GlobalOPT");
             Thread.Sleep(1000);
             Echo("Checking required softwares...");
-            bool isDockerRunning = false;
+            bool isDockerRunning = false;//Is docker running variable
+            //Is docker running checking
             Process[] pname = Process.GetProcessesByName("Docker Desktop");
             if (pname.Length == 0)
             {
@@ -55,27 +58,33 @@ namespace GlobalOPT_FW_Application
             {
                 isDockerRunning = true; Echo("Docker is running!");
             }
-            InstallRequiredSoftwares();
-            File.Delete("gitinstaller.ps1");//Delete Git Installer shell script
-            File.Delete("dockerinstaller.ps1");//Delete Docker Installer shell script
-            if (softwareInstallation)
+            //Is docker running checking
+            InstallRequiredSoftwares();//Install docker and git if its not installed
+            try
+            {
+                File.Delete("gitinstaller.ps1");//Delete Git Installer shell script for cleaning
+                File.Delete("dockerinstaller.ps1");//Delete Docker Installer shell script for cleaning
+            }
+            catch { }
+            if (softwareInstallation)//If any software installed
                 Echo("Checking completed. System now has all required softwares");
             else
                 Echo("Checking completed. System has all required softwares");
             Echo("Docker starting.");
-            if (!isDockerRunning)
+            if (!isDockerRunning)//is docker not running start it
             {
-                RestartDocker();
-                Thread.Sleep(10000);
+                StartDocker();
+                Thread.Sleep(10000);//docker engine will startup in 10s(idk why)
             }
             Echo("Docker started.");
-            ClearAndUpdate();
+            ClearAndUpdate();//Clear old builds and update repo if need
             Echo("Insert Parameters");
+            //Taking params
             Console.WriteLine("Enter 0 For Skip All Parameters");
             Console.WriteLine("Leave Empty For Skip Parameter");
             Console.Write("Select an Algorithm: ");
             algorithm = Console.ReadLine();
-            if (algorithm != "0")
+            if (algorithm != "0")//If 0 selected for algorithm it will use default settings(on git repo) or if you have your params from last time it will use it
             {
                 Console.Write("Number of Iteration: ");
                 iteration = Console.ReadLine();
@@ -93,12 +102,13 @@ namespace GlobalOPT_FW_Application
             {
                 Echo("Last parameters will be used");
             }
+            //Taking params
             if (!Directory.Exists(gitRepoClonePath)) GitClone();//if repo does not exists clone it
-            CreateDockerImage();
-            RunDockerBuild();
+            CreateDockerImage();//create docker image with git repo
+            RunDockerBuild();//run the docker image
             Console.ReadKey();
         }
-        static void RunDockerBuild()
+        static void RunDockerBuild()//run the docker image
         {
             //Runs created docker build
             Echo("Executing...");
@@ -116,12 +126,12 @@ namespace GlobalOPT_FW_Application
             Echo("Result file succesfully written on result file on Desktop\n\nPress any key to exit");
             //Saving results in result.txt file
         }
-        static void InstallRequiredSoftwares()
+        static void InstallRequiredSoftwares()//Install docker and git if its not installed
         {
             GitInstall();
             DockerInstall();
         }
-        static void GitInstall()
+        static void GitInstall()//Installing Git via powershell
         {
             Echo("Checking Git...");
             strCmdText = "/C git -v";
@@ -153,12 +163,12 @@ namespace GlobalOPT_FW_Application
             else
                 Echo("Git found.");
         }
-        static void Restart()
+        static void Restart()//Restart the application
         {
             System.Diagnostics.Process.Start(Assembly.GetExecutingAssembly().Location);
             Environment.Exit(0);
         }
-        static void DockerInstall()
+        static void DockerInstall()//Installing Docker via powershell
         {
             Echo("Checking Docker...");
             strCmdText = "/C docker -v";
@@ -194,14 +204,14 @@ namespace GlobalOPT_FW_Application
                 Echo("Docker found.");
 
         }
-        static void ProcKil(string proc)
+        static void ProcKil(string proc)//Kills a process(like notepad.exe)
         {
             foreach (var process in Process.GetProcessesByName(proc))
             {
                 process.Kill();
             }
         }
-        static void KillDocker()
+        static void KillDocker()//Kill all docker process
         {
             ProcKil("docker");
             ProcKil("com.docker.vpnkit");
@@ -209,10 +219,10 @@ namespace GlobalOPT_FW_Application
             ProcKil("com.docker.backend");
             ProcKil("Docker Desktop");
         }
-        static void RestartDocker()
+        static void StartDocker()//Starts docker.backend
         {
             bool procK = false;
-            var proc = Process.Start(@"C:\Program Files\Docker\Docker\resources\com.docker.backend.exe");
+            var proc = Process.Start(winDir + @"Program Files\Docker\Docker\resources\com.docker.backend.exe");//Docker backend path (default)
             while (!procK)
             {
                 foreach (var process in Process.GetProcessesByName("Docker Desktop"))
@@ -221,24 +231,10 @@ namespace GlobalOPT_FW_Application
             }
             while (proc.MainWindowHandle == IntPtr.Zero) //note: only works as long as your process actually creates a main window.
                 System.Threading.Thread.Sleep(10);
-            ShowWindow(proc.MainWindowHandle, 0);
+            ShowWindow(proc.MainWindowHandle, 0);//Hide command window for better visualization
         }
-        static string GetPathForExe(string fileName)
-        {
-            string keyBase = @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths";
-            RegistryKey localMachine = Registry.LocalMachine;
-            RegistryKey fileKey = localMachine.OpenSubKey(string.Format(@"{0}\{1}", keyBase, fileName));
-            object result = null;
-            if (fileKey != null)
-            {
-                result = fileKey.GetValue(string.Empty);
-                fileKey.Close();
-            }
 
-
-            return (string)result;
-        }
-        static void CreateDockerImage()
+        static void CreateDockerImage()//Building docker image with params
         {
             //Building docker image
             Echo("Getting parameters...");
@@ -253,7 +249,7 @@ namespace GlobalOPT_FW_Application
                 depth = depth != string.Empty ? depth : lines[4].Split('=')[1];
                 num_matrices = num_matrices != string.Empty ? num_matrices : lines[5].Split('=')[1];
                 bfi = bfi != string.Empty ? bfi : lines[6].Split('=')[1];
-                ChangeParameters();
+                ChangeParameters();//Change parameter.txt with inserted params
                 Echo("Implementing completed");
             }
             Thread.Sleep(100);
@@ -263,7 +259,7 @@ namespace GlobalOPT_FW_Application
             Echo("Docker Image Built Succesfully!");
             //Building docker image  
         }
-        static void GitClone()
+        static void GitClone()//Cloning git repo on Desktop 
         {
             //Cloning git repo on Desktop 
             Echo("Cloning Git Repository...");
@@ -273,7 +269,7 @@ namespace GlobalOPT_FW_Application
             //Cloning git repo on Desktop
         }
 
-        static void ClearAndUpdate()
+        static void ClearAndUpdate()//Clear old builds and update repo if need
         {
             //Updating repo
             Echo("Clearing old builds and updating repository...");
@@ -323,7 +319,7 @@ namespace GlobalOPT_FW_Application
             return output;
         }
 
-        static void Echo(string text, ConsoleColor color = ConsoleColor.Green)//function that logs on terminal 
+        static void Echo(string text, ConsoleColor color = ConsoleColor.Green)//function that logs with color on terminal 
         {
             Console.ForegroundColor = color;
             Console.WriteLine(text + "\n");
