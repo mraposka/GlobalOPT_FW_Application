@@ -32,7 +32,8 @@ namespace GlobalOPT_FW_Application
             //<summary>
             //---To-do list---
             // 
-            //command succesful check   
+            //command succesful check
+            //Algorithm bug fixes?
             //  
             //---To-do list---
             //</summary>  
