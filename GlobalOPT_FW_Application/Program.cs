@@ -32,31 +32,29 @@ namespace GlobalOPT_FW_Application
             //<summary>
             //---To-do list---
             // 
-            //command succesful check  
-            //parametreler algoritmaya göre istenecek
+            //command succesful check   
             //  
             //---To-do list---
-            //</summary> 
-
+            //</summary>  
             Echo("Welcome to the GlobalOPT");
             Thread.Sleep(1000);
             Echo("Checking required softwares...");
             bool isDockerRunning = false;//Is docker running variable
             //Is docker running checking
-            Process[] pname = Process.GetProcessesByName("Docker Desktop");
+            Process[] pname = Process.GetProcessesByName("com.docker.backend");
             if (pname.Length == 0)
             {
-                pname = Process.GetProcessesByName("Docker Desktop Backend");
+                KillDocker(); Echo("Docker is not running or installed!"); 
+            }
+            else
+            {
+                pname = Process.GetProcessesByName("docker");
                 if (pname.Length == 0)
                 {
                     KillDocker(); Echo("Docker is not running or installed!");
                 }
                 else
-                { isDockerRunning = true; Echo("Docker is running!"); }
-            }
-            else
-            {
-                isDockerRunning = true; Echo("Docker is running!");
+                { isDockerRunning = true; Echo("Docker is running!"); } 
             }
             //Is docker running checking
             InstallRequiredSoftwares();//Install docker and git if its not installed
@@ -70,32 +68,70 @@ namespace GlobalOPT_FW_Application
                 Echo("Checking completed. System now has all required softwares");
             else
                 Echo("Checking completed. System has all required softwares");
-            Echo("Docker starting.");
+            DockerStartup:
             if (!isDockerRunning)//is docker not running start it
-            {
+            { 
+                Echo("Docker starting.");
                 StartDocker();
                 Thread.Sleep(10000);//docker engine will startup in 10s(idk why)
+                Echo("Docker started.");
             }
-            Echo("Docker started.");
             ClearAndUpdate();//Clear old builds and update repo if need
             Echo("Insert Parameters");
             //Taking params
+            Console.WriteLine("Enter R For Restart Services");
             Console.WriteLine("Enter 0 For Skip All Parameters");
             Console.WriteLine("Leave Empty For Skip Parameter");
             Console.Write("Select an Algorithm: ");
-            algorithm = Console.ReadLine();
+            algorithm = Console.ReadLine(); 
+            if(algorithm.ToUpper() == "R")
+            {
+                KillDocker(); 
+                isDockerRunning = false;
+                Echo("Restarting services...");
+                Thread.Sleep(1000);
+                Console.Clear();
+                goto DockerStartup;
+            }
             if (algorithm != "0")//If 0 selected for algorithm it will use default settings(on git repo) or if you have your params from last time it will use it
             {
-                Console.Write("Number of Iteration: ");
-                iteration = Console.ReadLine();
-                Console.Write("Threshold Value: ");
-                threshold = Console.ReadLine();
-                Console.Write("Depth Value: ");
-                depth = Console.ReadLine();
-                Console.Write("Number of Matrices: ");
-                num_matrices = Console.ReadLine();
-                Console.Write("BFI Value: ");
-                bfi = Console.ReadLine();
+                switch (algorithm)
+                {
+                    case "2":
+                        Console.Write("Number of Matrices: ");
+                        num_matrices = Console.ReadLine();
+                        Console.Write("Threshold Value: ");
+                        threshold = Console.ReadLine();
+                        Console.Write("Depth Value: ");
+                        depth = Console.ReadLine();
+                        break;
+                    case "6":
+                        Console.Write("Number of Matrices: ");
+                        num_matrices = Console.ReadLine();
+                        Console.Write("Threshold Value: ");
+                        threshold = Console.ReadLine();
+                        break;
+                    case "7":
+                        Console.Write("Number of Matrices: ");
+                        num_matrices = Console.ReadLine();
+                        Console.Write("Threshold Value: ");
+                        threshold = Console.ReadLine();
+                        break;
+                    case "16":
+                        Console.Write("Threshold Value: ");
+                        threshold = Console.ReadLine();
+                        Console.Write("Depth Value: ");
+                        depth = Console.ReadLine();
+                        Console.Write("Number of Matrices: ");
+                        num_matrices = Console.ReadLine();
+                        Console.Write("BFI Value: ");
+                        bfi = Console.ReadLine();
+                        break;
+                    default:
+                        Console.Write("Number of Iteration: ");
+                        iteration = Console.ReadLine();
+                        break;
+                } 
                 Echo("Parameters saved");
             }
             else
@@ -222,7 +258,7 @@ namespace GlobalOPT_FW_Application
         static void StartDocker()//Starts docker.backend
         {
             bool procK = false;
-            var proc = Process.Start(winDir + @"Program Files\Docker\Docker\resources\com.docker.backend.exe");//Docker backend path (default)
+            var proc = Process.Start(Path.Combine(winDir + @"Program Files\Docker\Docker\resources\com.docker.backend.exe"));//Docker backend path (default)
             while (!procK)
             {
                 foreach (var process in Process.GetProcessesByName("Docker Desktop"))
