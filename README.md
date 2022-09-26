@@ -25,4 +25,5 @@
         ALGORITHM=16 - BFI-BP-depthConstrained          -> (MATRIX_PATH, NUM_MATRICES, THRESHOLD, DEPTH, BFI)
 
 # How does it work?
-#### Application will check docker and git installations. If you don't have docker or git it will automatically install (with  your permission ofc). After installation, application will clone the [OptFramework](https://github.com/mraposka/DockerOPT) repo, build it on docker(ubuntu) and runs it with your parameters.
+#### 1- Application will check docker and git installations. If you don't have docker or git it will automatically install (with permission ofc). 
+#### 2- After installation, application will clone the [OptFramework](https://github.com/mraposka/DockerOPT) repo, build it on docker(ubuntu) and runs it with your parameters.
